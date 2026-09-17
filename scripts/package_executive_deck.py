@@ -26,7 +26,7 @@ served.mkdir(parents=True, exist_ok=True)
 for name in ["Demand-Sensing-Executive.pptx", "Demand-Sensing-Executive.pdf", "manifest.json"]:
     shutil.copy2(folder / name, served / name)
 shutil.copytree(folder / "slides", served / "slides", dirs_exist_ok=True)
-notes = ["# Demand Sensing Intelligence: speaker notes", "", "Slides 1–20 form the main presentation. Slides 21–26 provide technical detail.", ""]
+notes = ["# Demand Sensing Intelligence: speaker notes", "", f"Slides 1–{manifest['mainSlides']} form the main presentation. Slides {manifest['mainSlides']+1}–{len(manifest['slides'])} provide technical detail.", "", "Executive route: " + ", ".join(map(str, manifest.get('executiveSlides', []))), ""]
 for s in manifest["slides"]:
     notes.extend([f"## {s['number']:02d}. {s['title']}", "", s["notes"], ""])
 (folder / "Speaker-Notes.md").write_text("\n".join(notes), encoding="utf-8")

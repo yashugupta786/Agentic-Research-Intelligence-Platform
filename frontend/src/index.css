@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 
+.ed-route { font: inherit; color: inherit; background: var(--color-surface, white); border: 1px solid #ccd9e2; border-radius: 8px; padding: 8px 10px; max-width: 220px; }
+
 /* ---------------------------------------------------------------------------
    Design tokens.
 

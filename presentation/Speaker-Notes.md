@@ -1,0 +1,108 @@
+# Demand Sensing Intelligence: speaker notes
+
+Slides 1–20 form the main presentation. Slides 21–26 provide technical detail.
+
+## 01. Demand Sensing
+Intelligence
+
+Prepared by Yashu Gupta. Introduce the business question: which research should a team commission, refresh or maintain? The prototype integrates public signals with a simulated internal library. The case-study brief explicitly permits a simulated library and flexible technology choices. Implementation sources: backend/app/agents/graph.py. Case-study source: Case_Study_Lead DS.docx. Values described as illustrative are teaching assumptions, not recorded outcomes.
+
+## 02. The decision: where should research invest next?
+
+Research leaders face two distinct jobs. Market scan compares external attention with internal coverage. Library QA answers a specific question using internal passages and citations. The output supports an analyst's decision. Business impact and time saved have not yet been measured. Implementation sources: backend/app/agents/nodes.py, backend/app/services/rag.py. Case-study source: Case_Study_Lead DS.docx. Values described as illustrative are teaching assumptions, not recorded outcomes.
+
+## 03. Five requirements, with visible evidence
+
+Implementation sources: Case_Study_Lead DS.docx, frontend/src/pages/Console.tsx, frontend/src/pages/GraphExplorer.tsx. Case-study source: Case_Study_Lead DS.docx. Values described as illustrative are teaching assumptions, not recorded outcomes.
+
+## 04. Application architecture
+
+The browser sends question, selected intent and refresh flag to FastAPI. The live UI uses GET /api/ask/stream and server-sent events. POST /api/ask serves blocking clients. HTTP validation checks question length. A worker executes LangGraph. Shared state carries inputs and node updates. Tools perform search, model calls, vector retrieval and graph construction. SQLite retains source data, scores and complete run snapshots. These are local services, not a production distributed architecture. Implementation sources: backend/app/api/agent.py, backend/app/api/schemas.py, backend/app/agents/graph.py, backend/app/services/run_history.py. Case-study source: Case_Study_Lead DS.docx. Values described as illustrative are teaching assumptions, not recorded outcomes.
+
+## 05. Nine specialists share one research state
+
+This is an ordered LangGraph workflow. The nodes have distinct responsibilities, but they are not nine independent autonomous models. The Planner uses code when the UI forces Market scan and an LLM in Auto mode. Scout calls search without an LLM. Topic Analyst and Librarian use models. Attention and gap scoring use Python. Graph construction uses NetworkX and embedding-based adjacency. Synthesis and critic use separate model calls. Implementation sources: backend/app/agents/graph.py, backend/app/agents/nodes.py. Case-study source: Case_Study_Lead DS.docx. Values described as illustrative are teaching assumptions, not recorded outcomes.
+
+## 06. Setup prepares the library before inference
+
+Ingestion stores documents and chunks in SQLite. Chunking uses about 130 words with 25-word overlap and includes the title. Embeddings use the configured model, with 768 dimensions by default. FAISS stores normalized vectors and maps positions to document and chunk IDs. Setup does not run the nine market-scan agents and does not train Gemini. Inference embeds the question or topic and reuses the index. Archive content can be stored but is excluded from coverage and library QA. Implementation sources: backend/app/services/ingestion.py, backend/app/services/vectorstore.py, backend/app/config.py. Case-study source: Case_Study_Lead DS.docx. Values described as illustrative are teaching assumptions, not recorded outcomes.
+
+## 07. Planner and Scout preserve intent and evidence
+
+Forced Market scan normalizes a recognizable market subject without changing state.question. It creates the subject, emerging trends, and regulation governance queries. Auto mode uses the planning model instead. Scout requests eight results per query by default, with a 45-day search parameter in the scan path, then deduplicates URLs. Search-provider dates can be incomplete or outside the requested window. Run 9 used cached Tavily results: 8+8+8 raw hits, 23 unique URLs and 20 outlets. Topic extraction uses titles, snippets and metadata, not full fetched article HTML. Implementation sources: backend/app/agents/nodes.py, backend/app/services/external_signals.py, SQLite run 9. Case-study source: Case_Study_Lead DS.docx. Values described as illustrative are teaching assumptions, not recorded outcomes.
+
+## 08. Topic consolidation preserves article provenance
+
+Illustrative input: 12 articles each produce 2 topic phrases, yielding 24 mentions. Extraction runs in batches of 6, producing 1–3 themes plus entities and a driver per article. Lexical normalization can reduce 24 mentions to 16 distinct strings. These counts are illustrative, not promises. The code maintains surface_counter, surface_articles and surface_original. Normalized embeddings join greedy centroid clusters at threshold 0.93. A second LLM returns canonical labels, descriptions, categories and member_groups. It can merge input groups. Mapping member groups back to phrases then article indexes yields topic evidence, entities, drivers and distinct URL counts. Articles still remain in shared state. Implementation sources: backend/app/services/topics.py. Case-study source: Case_Study_Lead DS.docx. Values described as illustrative are teaching assumptions, not recorded outcomes.
+
+## 09. Attention quantifies the observed news sample
+
+Illustrative example used throughout scoring: 5 distinct articles, 4 distinct domains, newest article age 4 days. Breadth=min(1,0.7*4/6+0.3*5/12)=0.591667. Recency=exp(-4/30)=0.875173. Attention=0.7*breadth+0.3*recency=0.676719, about 0.68. The 30 days is the exponential decay time constant, not the half-life. Half-life is approximately 20.8 days. Unknown dates get no recency credit. Source count is distinct domains and mention count is distinct article URLs per canonical topic. Implementation sources: backend/app/services/topics.py: score_momentum. Case-study source: Case_Study_Lead DS.docx. Values described as illustrative are teaching assumptions, not recorded outcomes.
+
+## 10. Coverage retrieval separates similarity from relevance
+
+For every canonical topic the query is topic label plus description. FAISS returns up to 50 passage candidates with default top_k=5. The code excludes Syndicated Archive, keeps the best passage per document, filters similarity at 0.62 and retains at most 10 documents for judgment. The judge receives topic label and description plus document ID, title, practice area, type, similarity and the first 420 characters of that best passage. It returns covers, partial, tangential or unrelated and a reason per document. The code accepts covers/partial, sorts by verdict weight then similarity, and keeps at most five. It does not pass all 50 chunks to the judge. Implementation sources: backend/app/services/coverage.py. Case-study source: Case_Study_Lead DS.docx. Values described as illustrative are teaching assumptions, not recorded outcomes.
+
+## 11. An old direct match can still reveal a refresh need
+
+Illustrative topic: Clinical AI Governance. RN-9001 is a teaching document with direct coverage but age 500 days. RN-9002 is about diagnostic accuracy and RN-9003 about ambient documentation. Treat those two as tangential to this particular governance question. They contribute zero despite plausible vector similarity. Verdict weights: covers=1, partial=0.5, tangential/unrelated=0. Freshness is 1 until day120, linearly decreases to0 at day450. Usable weight=w*(0.25+0.75*f). RN-9001 usable weight=0.25. Coverage=.6*(.25/5)+.4*.25=.13. staleness_days is the age of the newest accepted document, here500. Implementation sources: backend/app/services/coverage.py. Case-study source: Case_Study_Lead DS.docx. Values described as illustrative are teaching assumptions, not recorded outcomes.
+
+## 12. The gap score supports a specific research action
+
+Using the same teaching values: attention .676719 and coverage .13. Gap=.676719*(1-.13)=.588746, shown .59. Priority is critical above .45. Refresh classification takes precedence when attention>=.50, accepted document count>0, newest accepted document age>300 and coverage<.70. The example meets all four, so refresh existing research rather than commissioning a duplicate. These are prototype rules requiring calibration. Graph Curator runs before Gap Analyst but graph node counts are not inputs to the score. Implementation sources: backend/app/services/coverage.py: classify and score_gap, backend/app/agents/nodes.py. Case-study source: Case_Study_Lead DS.docx. Values described as illustrative are teaching assumptions, not recorded outcomes.
+
+## 13. The knowledge graph makes evidence inspectable
+
+The graph adds entity mentions from TopicCandidate objects and accepted internal research from coverage. Relationships include topic mentions entity, topic covered_by document, document published_in_area practice area, and topic adjacent_to topic using cosine threshold0.62. The main map omits practice-area nodes for clarity, starts with one topic and limits entities. A covered_by link can be partial or stale and its displayed edge weight is similarity, not coverage probability. It is not a GraphRAG retrieval path in this MVP. The snapshot belongs to the saved run. Implementation sources: backend/app/services/knowledge_graph.py, frontend/src/pages/GraphExplorer.tsx. Case-study source: Case_Study_Lead DS.docx. Values described as illustrative are teaching assumptions, not recorded outcomes.
+
+## 14. Synthesis explains the scores and Critic checks them
+
+Synthesizer receives computed gaps and topic analytics. Code determines recommendations and the model writes a summary. A fallback computed narrative is available if the model is unavailable. Critic compares the narrative with supplied analytics and returns a consistency verdict, confidence and issues. This is not a fact check of source articles or an independently calibrated confidence probability. Library QA skips additional synthesis/critic model calls because Librarian already produced the answer and groundedness review. Implementation sources: backend/app/agents/nodes.py: synthesizer_node and critic_node. Case-study source: Case_Study_Lead DS.docx. Values described as illustrative are teaching assumptions, not recorded outcomes.
+
+## 15. Library QA uses a separate retrieval path
+
+The original client question is the retrieval query. Default k=6, initial candidate search k*4 with min_score .42. Archive is excluded and at most two chunks per document survive. Model writes from passages with [RN-####] citations. Invalid citation IDs are removed. Independent groundedness assessment estimates supported/total claims and lists unsupported claims. Empty retrieval triggers abstention. Retrieval without supporting content should be stated as insufficient. No Tavily search or attention/gap scoring is necessary. Implementation sources: backend/app/services/rag.py, backend/app/agents/nodes.py, backend/app/config.py. Case-study source: Case_Study_Lead DS.docx. Values described as illustrative are teaching assumptions, not recorded outcomes.
+
+## 16. Recorded runs preserve the complete demonstration
+
+Verified SQLite run9: question AI in healthcare, saved2026-09-17, latency63965ms, cached Tavily evidence,23articles20outlets,53raw topic mentions,9canonical topics,55graphnodes160edges. Nine agents completed and critique_issues/errors are empty. This is one observed run and not a latency benchmark or quality evaluation. Replay loads result_json fromSQLite and performs no search/model calls. Legacy history can contain only summary/trace and cannot reproduce data never stored. Implementation sources: SQLite runs.id=9, backend/app/services/run_history.py. Case-study source: Case_Study_Lead DS.docx. Values described as illustrative are teaching assumptions, not recorded outcomes.
+
+## 17. Quality measurement needs an analyst-labelled test set
+
+Separate operational metrics already captured from validation not yet completed. Latency/calls/tokens are observable per run, though process-wide telemetry slicing is not safe under concurrent requests. Model groundedness and consistency scores are estimates, not validated accuracy. Proposed evaluation: analyst-labelled questions, recall@k and citation precision, relevance verdict agreement, gap recommendation usefulness, analyst time saved, p50/p95 latency and cost under repeated runs. Set acceptance targets after a baseline. No invented KPI values. Implementation sources: backend/app/core/telemetry.py, backend/app/services/rag.py, backend/app/services/coverage.py. Case-study source: Case_Study_Lead DS.docx. Values described as illustrative are teaching assumptions, not recorded outcomes.
+
+## 18. Technology choices fit the prototype’s scope
+
+Implementation sources: backend/app/agents/graph.py, backend/app/services/vectorstore.py, backend/app/services/knowledge_graph.py, backend/app/data/db.py. Case-study source: Case_Study_Lead DS.docx. Values described as illustrative are teaching assumptions, not recorded outcomes.
+
+## 19. A staged path to a dependable research service
+
+Recommended order: validate usefulness before adding architectural complexity. First create labelled evaluation sets and calibrate thresholds. Then strengthen evidence with real temporal baselines, richer article text, hybrid retrieval and reranking. Before broader use add auth, access-aware retrieval, request-scoped telemetry, durable queues, cancellation/resume and monitored provider budgets. Move to shared vector/graph services only when measured scale warrants it. These are future work, not deployed capabilities. Implementation sources: README.md, backend/app/agents/graph.py, backend/app/services/coverage.py. Case-study source: Case_Study_Lead DS.docx. Values described as illustrative are teaching assumptions, not recorded outcomes.
+
+## 20. Research planning with an inspectable evidence trail
+
+Close on the business result. The MVP ties a question to external evidence, canonical topics, internal coverage, a graph and proposed research actions. Library QA provides cited answers through its own route. Recommend a controlled analyst evaluation before claiming measurable impact. The remaining appendix provides exact contracts and calculation details.
+
+## 21. Agent contracts: planning through attention
+
+Implementation sources: backend/app/agents/nodes.py, backend/app/services/topics.py. Case-study source: Case_Study_Lead DS.docx. Values described as illustrative are teaching assumptions, not recorded outcomes.
+
+## 22. Agent contracts: coverage through review
+
+Implementation sources: backend/app/agents/nodes.py, backend/app/services/coverage.py. Case-study source: Case_Study_Lead DS.docx. Values described as illustrative are teaching assumptions, not recorded outcomes.
+
+## 23. The three dictionaries preserve mapping during cleanup
+
+This small example is illustrative. Article0 extracts AI Governance and Agentic AI. Article1 extracts ai governance. Article2 extracts AI Governance and Clinical Oversight. Normalization yields ai governance three times, agentic ai once and clinical oversight once. surface_counter counts extracted mentions per normalized phrase, surface_articles records article indexes, surface_original retains a display phrase. Final topic mention_count counts unique URLs after mapping, not repeated phrases. Implementation sources: backend/app/services/topics.py: discover_topics. Case-study source: Case_Study_Lead DS.docx. Values described as illustrative are teaching assumptions, not recorded outcomes.
+
+## 24. Centroids form groups, then the model names them
+
+Normalized embeddings make a dot product equal cosine similarity. For each phrase vector, the greedy algorithm compares it with current cluster centroids. It joins the best cluster when score>=.93 or starts a new cluster. After a join it averages member vectors and renormalizes the centroid. This is order-dependent and is not an all-pairs comparison or guaranteed topic count. Canonicalization receives group IDs, phrases and frequency information and returns member_groups. These group IDs let code map back to phrase indexes and article indexes. The model may merge several input groups into a final topic. Implementation sources: backend/app/services/topics.py: semantic_clusters, canonicalise, discover_topics. Case-study source: Case_Study_Lead DS.docx. Values described as illustrative are teaching assumptions, not recorded outcomes.
+
+## 25. Coverage mathematics and missing-data rules
+
+Verdict and reason come from the LLM. Coverage score and age come from Python. Freshness=1 for age<=120,0 for age>=450,otherwise1-(age-120)/330. Usable weight=verdict_weight*(.25+.75*freshness). Coverage=.6*min(1,sum(usable)/5)+.4*max(usable). Age uses calendar-day differences with future dates clamped to0. Missing or malformed dates map to999. No accepted documents returns coverage0,doc_count0,staleness999. This sentinel means unknown/no dated accepted evidence, not an actual age measurement. Proxy verdict is partial only at similarity>=.74,otherwise unrelated. Proxy-only coverage cannot exceed.50 with five fresh partial matches. Implementation sources: backend/app/services/coverage.py. Case-study source: Case_Study_Lead DS.docx. Values described as illustrative are teaching assumptions, not recorded outcomes.
+
+## 26. Failure behavior and production boundaries
+
+Implementation sources: backend/app/agents/nodes.py, backend/app/services/coverage.py, backend/app/services/run_history.py, backend/app/api/agent.py. Case-study source: Case_Study_Lead DS.docx. Values described as illustrative are teaching assumptions, not recorded outcomes.

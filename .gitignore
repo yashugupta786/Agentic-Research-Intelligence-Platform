@@ -1,0 +1,39 @@
+# Secrets — never commit. Keys are sent by email.
+.env
+*.env
+!.env.example
+
+# Python
+backend/venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Node
+node_modules/
+frontend/dist/
+.vite/
+
+# Local scratch and OS
+_scratch/
+tmp/
+output/
+.DS_Store
+INTERVIEW_SCRIPT.md
+Case_Study_Lead DS.docx
+presentation/*-v2.pptx
+
+# Search/API caches (rebuild on a live scan; not required to open the library)
+backend/data/cache/
+
+# SQLite sidecars only. The seeded demo database must be committed.
+*.db-wal
+*.db-shm
+*.db
+!backend/data/intelligence.db
+
+# Other FAISS dumps. Keep the seeded library index and its ID map.
+*.faiss
+!backend/data/library.faiss
+*.index
+!backend/data/library_ids.json

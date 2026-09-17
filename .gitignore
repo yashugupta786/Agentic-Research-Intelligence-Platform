@@ -22,7 +22,7 @@ output/
 INTERVIEW_SCRIPT.md
 HOW_IT_WORKS.md
 Case_Study_Lead DS.docx
-presentation/*-v2.pptx
+presentation/Demand-Sensing-Executive-v*.pptx
 
 # Search/API caches (rebuild on a live scan; not required to open the library)
 backend/data/cache/

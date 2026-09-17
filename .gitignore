@@ -17,6 +17,7 @@ frontend/dist/
 # Local scratch and OS
 _scratch/
 tmp/
+backend/tests/history-test-*/
 output/
 .DS_Store
 INTERVIEW_SCRIPT.md

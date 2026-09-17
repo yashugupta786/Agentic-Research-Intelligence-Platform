@@ -54,7 +54,7 @@ Top-right **Current Architecture** opens a live-wired map of the LangGraph workf
 
 ### Slides
 
-Top-right **Slides** opens the executive deck (26 pages: 20 main + 6 appendix). Download PowerPoint or PDF from that viewer. The files also live in `presentation/`.
+Top-right **Slides** opens the executive deck (22 pages: 18 main + 4 reference). Download PowerPoint or PDF from that viewer. Those files are `presentation/Demand-Sensing-Executive.pptx` and `presentation/Demand-Sensing-Executive.pdf`, and the same copies are served in the app.
 
 ![Slides overlay](screenshot/04-presentation-light.png)
 

@@ -312,7 +312,7 @@ run.py                       Same API start from the repo root
 README.pdf                   Printable copy of this guide
 ```
 
-Design notes: [HOW_IT_WORKS.md](HOW_IT_WORKS.md). Deck notes: [presentation/README.md](presentation/README.md) and [presentation/Speaker-Notes.md](presentation/Speaker-Notes.md).
+The in-app **Slides** overlay and `presentation/` contain the executive deck (PowerPoint, PDF and speaker notes). That is the explanation sent by email.
 
 ---
 
